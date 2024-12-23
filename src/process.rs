@@ -1,22 +1,23 @@
+use crate::error::ShellError;
 use nix::unistd::execv;
 use std::convert::Infallible;
 use std::ffi::CString;
 
 pub trait Process {
-    fn replace(self) -> Result<Infallible, ()>;
+    fn replace(self) -> Result<Infallible, ShellError<()>>;
 }
 
 pub struct UnixProcess {
-    command: CString,
+    command: String,
     argv: Vec<CString>,
 }
 
 impl UnixProcess {
     pub fn new(command: impl AsRef<str>) -> Self {
-        let command = CString::new(command.as_ref()).unwrap();
+        let cmd = CString::new(command.as_ref()).unwrap();
         Self {
-            command: command.clone(),
-            argv: vec![command],
+            command: command.as_ref().to_owned(),
+            argv: vec![cmd],
         }
     }
 
@@ -27,8 +28,8 @@ impl UnixProcess {
 }
 
 impl Process for UnixProcess {
-    fn replace(self) -> Result<Infallible, ()> {
-        let Err(_) = execv(&self.command, &self.argv);
-        Err(())
+    fn replace(self) -> Result<Infallible, ShellError<()>> {
+        let Err(_) = execv(&self.argv[0], &self.argv);
+        Err(ShellError::new(self.command.clone(), ()))
     }
 }
