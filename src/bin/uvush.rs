@@ -4,9 +4,10 @@ use uvush::utils::perror;
 
 fn main() {
     let echo = UnixProcess::new("/usr/bin/echo")
-        .arg("Holis, espero que andes bien. Mirame, estoy haciendo mi propia shell uvu");
+        .arg("Te fuiste corriendo, y me duele mucho ver lo fácil que fue para vos");
 
-    let Err(err) = echo.replace();
-    let err = ShellError::with_cause("uvush", err);
-    perror(err.to_string());
+    if let Err(err) = echo.spawn() {
+        let err = ShellError::with_cause("uvush", err);
+        perror(err.to_string());
+    }
 }

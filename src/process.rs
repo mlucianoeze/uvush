@@ -1,10 +1,12 @@
 use crate::error::ShellError;
-use nix::unistd::execv;
+use nix::sys::wait::waitpid;
+use nix::unistd::{execv, fork, ForkResult};
 use std::convert::Infallible;
 use std::ffi::CString;
 
 pub trait Process {
     fn replace(self) -> Result<Infallible, ShellError<()>>;
+    fn spawn(&self) -> Result<(), ShellError<()>>;
 }
 
 pub struct UnixProcess {
@@ -31,5 +33,21 @@ impl Process for UnixProcess {
     fn replace(self) -> Result<Infallible, ShellError<()>> {
         let Err(_) = execv(&self.argv[0], &self.argv);
         Err(ShellError::new(self.command.clone(), ()))
+    }
+
+    fn spawn(&self) -> Result<(), ShellError<()>> {
+        match unsafe { fork() } {
+            Ok(ForkResult::Parent { child }) => {
+                println!("Child pid: {}", child);
+                let res = waitpid(child, None);
+                println!("Child terminated: {:?}", res);
+                Ok(())
+            }
+            Ok(ForkResult::Child) => {
+                let Err(_) = execv(&self.argv[0], &self.argv);
+                Err(ShellError::new(self.command.clone(), ()))
+            }
+            Err(_) => Err(ShellError::new(self.command.clone(), ())),
+        }
     }
 }
