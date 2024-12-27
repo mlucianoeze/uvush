@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 pub struct ShellError<T> {
     source: String,
@@ -32,5 +32,13 @@ impl<T> ShellError<T> {
 impl<T> Display for ShellError<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.source())
+    }
+}
+
+impl<T> Debug for ShellError<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ShellError(")?;
+        f.write_str(&self.source())?;
+        f.write_str(")")
     }
 }
